@@ -108,6 +108,31 @@ def touchdown():
 	b.set_group(GROUP, command1)
 	time.sleep(jump)
 	b.set_group(GROUP, resetcmd)
+	
+#get teams for list
+def getteams(GAMELINK):
+	response = http.urlopen('GET', GAMELINK, preload_content=False).read()
+	response = str(response)
+	lastplay = response
+	teams = response
+	
+	#get teams
+	teams = teams.split("<title>")
+	teams = teams[1]
+	teams = teams.split(" - ")
+	teams = teams[0]
+	
+	gametime = response.split("<span data-date=\"")
+	gametime = gametime[1]
+	gametime = gametime.split("\" data-behavior=")
+	gametime = gametime[0]
+	gametime = gametime.replace("T", " ", 1)
+	gametime = gametime.replace("Z", "", 1)
+	from time import localtime, strftime, gmtime, strptime
+	import calendar
+	xtime = calendar.timegm(strptime(gametime, "%Y-%d-%m %H:%M"))
+	starttime = strftime("%Y-%d-%m %H:%M %p", localtime(xtime))
+	return (teams + " - " + starttime)
 
 #general game function. 
 def lastplay(GAMELINK):
@@ -226,6 +251,17 @@ def lastplay(GAMELINK):
 				say = "This game has ended."
 			elif ("network" in finalc):
 				say = "This game has not yet started."
+				gametime = response.split("<span data-date=\"")
+				gametime = gametime[1]
+				gametime = gametime.split("\" data-behavior=")
+				gametime = gametime[0]
+				gametime = gametime.replace("T", " ", 1)
+				gametime = gametime.replace("Z", "", 1)
+				from time import localtime, strftime, gmtime, strptime
+				import calendar
+				xtime = calendar.timegm(strptime(gametime, "%Y-%d-%m %H:%M"))
+				print ("Game Starts At: " + strftime("%Y-%d-%m %H:%M %p", localtime(xtime)))
+				#ytime = strftime("%Y-%d-%m %H:%M", gametime)
 	return say
 
 while True:
@@ -235,6 +271,23 @@ while True:
 			GAMELINK = str(sys.argv[1])
 		except IndexError:
 			print ("Error: Please supply a game link to proceed.")
+			try:
+				input = raw_input
+			except NameError:
+				pass
+			with open ("gamestowatch", "r") as file:
+				stuff = file.readlines()
+			file.close()
+			print ("Choose a game:")
+			cnt = 1
+			for st in stuff:
+				#print (str(cnt) + ": " + st.strip())
+				print (str(cnt) + ": " + getteams(st.strip()))
+				cnt = cnt + 1
+			choice = input("Choice: ")
+			choice = int(choice) - 1
+			print (stuff[choice])
+			GAMELINK = stuff[choice].strip()
 		try:
 			global COLOR1
 			COLOR1 = sys.argv[2]
@@ -257,6 +310,7 @@ while True:
 		if ("This game has ended" in say):
 			break
 	except (Exception):
+	#except IndexError:
 		error = "Script Error. Waiting 15 seconds and retrying."
 		print (error)
 		time.sleep(WAIT)
