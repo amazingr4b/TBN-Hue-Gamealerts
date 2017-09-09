@@ -1,3 +1,24 @@
+#################################################################
+#License and Use Agreement:                                     #
+#                                                               #
+#Use of the TBN-Gamelog script is at will, and at your own risk.#
+#No warranty or support is provided.                            #
+#                                                               #
+#This script makes use of the Philips Hue API.                  #
+#TBN-Gamelog and TheBaconNation are unaffiliated with Philips   #
+#Hue.                                                           #
+#                                                               #
+#The Hue Portions of this script are made possible via          #
+#the phue library: https://github.com/studioimaginaire/phue     #
+#                                                               #
+#TBN-Gamelog, in part and in whole, is for personal use only.   #
+#                                                               #
+#TBN-Gamelog may not be used in another project without written #
+#premission from TheBaconNation.                                #
+#################################################################
+
+
+
 import time #used for time
 import urllib3 #used for http get requests
 import re #used for regex action
