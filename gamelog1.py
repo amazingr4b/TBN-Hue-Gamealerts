@@ -3,8 +3,14 @@ import urllib3 #used for http get requests
 import re #used for regex action
 import os #can be used for os action. For example launching a shell script. 
 import sys #used to get gamelink from commandline option
+#import tbn_hue #used for hue commands. needs tbn-plex currently. 
+
+#old method
 from phue import Bridge #used for hue actions
 b = Bridge('192.168.1.126') #bridge ip goes here
+
+#current supported color options
+supcolors = ['white','green','red','blue','liteblue','yellow','purple','pink','orange']
 
 #used for the location of the last play log. you need to specify a directory and file in between the "" below
 #global LASTPLAYTEXTLINK
@@ -22,19 +28,65 @@ http = urllib3.PoolManager()
 
 #what happens when a touchdown is scored. 
 def touchdown():
+	if HASTHEBALL == 0:
+		color = COLOR2
+	elif HASTHEBALL == 1:
+		color = COLOR1
+	else:
+		color = "white"
+	group = "all"
+	
+	if color.lower() == "white":
+		colcmd = {'transitiontime' : 0, 'on' : True, 'xy' : [0.3804, 0.3768]}
+	elif color.lower() == "green":
+		colcmd = {'transitiontime' : 0, 'on' : True, 'xy' : [0.4356, 0.4907]}
+	elif color.lower() == "red":
+		colcmd = {'transitiontime' : 0, 'on' : True, 'xy' : [0.6622, 0.3244]}
+	elif color.lower() == "blue":
+		colcmd = {'transitiontime' : 0, 'on' : True, 'xy' : [0.1768, 0.0557]}
+	elif color.lower() == "liteblue":
+		colcmd = {'transitiontime' : 0, 'on' : True, 'xy' : [0.1546, 0.2585]}
+	elif color.loewr() == "yellow":
+		colcmd = {'transitiontime' : 0, 'on' : True, 'hue' : 10787, 'sat' : 248}
+	elif color.lower() == "purple":
+		colcmd = {'transitiontime' : 0, 'on' : True, 'hue' : 53124, 'sat' : 254}
+	elif color.lower() == "pink":
+		colcmd = {'transitiontime' : 0, 'on' : True, 'hue' : 56389, 'sat' : 179}
+	elif color.lower() == "orange":
+		{'transitiontime' : 0, 'on' : True, 'hue' : 6322, 'sat' : 220}
+		
+	resetcmd = {'transitiontime' : 0, 'on' : True, 'xy' : [0.3804, 0.3768]}
+	'''
+	jump = .25
+	tbn_hue.setbri(group, 255)
+	time.sleep(jump)
+	tbn_hue.setbri(group, 75)
+	time.sleep(jump)
+	tbn_hue.setbri(group, 255)
+	time.sleep(jump)
+	tbn_hue.setbri(group, 75)
+	time.sleep(jump)
+	tbn_hue.setlwhite(group)
+	tbn_hue.setlwhite(group)
+	tbn_hue.setbri(group, 200)
+	'''
 	GROUP = "All" #light group that reacts to score events. 
 	command1 = {'transitiontime' : 0, 'on' : True, 'bri' : 125}
 	command2 = {'transitiontime' : 0, 'on' : True, 'bri' : 250}
 	jump = .25
-	b.set_group(GROUP, command1)
-	time.sleep(jump)
-	b.set_group(GROUP, command2)
+	b.set_group(GROUP,colcmd)
 	time.sleep(jump)
 	b.set_group(GROUP, command1)
 	time.sleep(jump)
 	b.set_group(GROUP, command2)
 	time.sleep(jump)
 	b.set_group(GROUP, command1)
+	time.sleep(jump)
+	b.set_group(GROUP, command2)
+	time.sleep(jump)
+	b.set_group(GROUP, command1)
+	time.sleep(jump)
+	b.set_group(GROUP, resetcmd)
 
 #general game function. 
 def lastplay(GAMELINK):
@@ -42,7 +94,24 @@ def lastplay(GAMELINK):
 	response = http.urlopen('GET', GAMELINK, preload_content=False).read()
 	response = str(response)
 	lastplay = response
-
+	teams = response
+	
+	#get teams
+	teams = teams.split("<title>")
+	teams = teams[1]
+	teams = teams.split(" - ")
+	teams = teams[0]
+	global HASTHEBALL
+	if ("team away possession" in response):
+		AT = "(HB) at "
+		HASTHEBALL = 1
+	elif ("team home possession" in response):
+		AT = " at (HB)"
+		HASTHEBALL = 0
+	else:
+		AT = " at "
+	teams = teams.replace(" vs. ", AT)
+	print (teams)
 	#get details of last play from previous run. If no previous run, makes file. 
 	global LASTPLAYTEXT
 	try:
@@ -109,7 +178,7 @@ def lastplay(GAMELINK):
 						#file.write("touchdown")
 					#file.close()
 					#DESIRED TOUCHDOWN ALERT ACTION GOES HERE.
-				elif "field goal" in lp2:
+				elif (("field goal" in lp2) or (" yd fg good " in lp2)):
 					print ("Field Goal!!!")
 					#with open(LASTPLAYTEXTLINK, "w+") as file:
 						#file.write("field goal")
@@ -145,6 +214,22 @@ while True:
 			GAMELINK = str(sys.argv[1])
 		except IndexError:
 			print ("Error: Please supply a game link to proceed.")
+		try:
+			global COLOR1
+			COLOR1 = sys.argv[2]
+			if COLOR1.lower() not in supcolors:
+				print ("Unsupported Color 1. Using \"white\"")
+				COLOR1 = "white"
+		except IndexError:
+			COLOR1 = "white"
+		try:
+			global COLOR2
+			COLOR2 = sys.argv[3]
+			if COLOR2.lower() not in supcolors:
+				print ("Unsupported Color 2. Using \"white\"")
+				COLOR2 = "white"
+		except IndexError:
+			COLOR2 = "white"
 		say = lastplay(GAMELINK)
 		if (say != "No Change in play."):
 			print (say)
